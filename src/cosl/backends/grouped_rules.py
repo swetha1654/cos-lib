@@ -30,7 +30,7 @@ from ..types import (
 logger = logging.getLogger(__name__)
 
 
-class _GroupedRuleBackend(RuleBackend[OfficialRuleFileItem]):  # type: ignore
+class _GroupedRuleBackend(RuleBackend[OfficialRuleFileItem]): # type: ignore
     """Shared base for Prometheus and Loki rule backends.
 
     Handles the groups-based rule format, topology injection into group names,
@@ -40,7 +40,7 @@ class _GroupedRuleBackend(RuleBackend[OfficialRuleFileItem]):  # type: ignore
     query_type: QueryType
 
     def __init__(self, topology: Optional[JujuTopology] = None) -> None:
-        super().__init__(topology=topology)
+        self.topology = topology
         self.tool = CosTool(default_query_type=self.query_type)
 
     @property

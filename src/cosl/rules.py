@@ -111,7 +111,6 @@ import copy
 import hashlib
 import logging
 import re
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -124,10 +123,12 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Protocol,
     Tuple,
     TypeVar,
     Union,
     cast,
+    runtime_checkable,
 )
 
 import yaml
@@ -258,30 +259,27 @@ class Result(Generic[T]):
     errmsg: Optional[str]
 
 
-class RuleBackend(ABC, Generic[T]):
-    """Abstract base for format-specific rule handling.
+@runtime_checkable
+class RuleBackend(Protocol[T]):
+    """Protocol for format-specific rule handling.
 
     Type parameter *T* is the internal representation of a single rule item.
 
-    Subclasses must implement four methods:
+    Implementations must provide:
 
-    * :meth:`file_suffixes` — which file extensions this backend reads.
+    * :attr:`file_suffixes` — which file extensions this backend reads.
     * :meth:`from_dict` — parse a raw dict into normalised rule items,
       injecting Juju topology where appropriate.
+    * :meth:`from_file` — read a rule file and parse it.
     * :meth:`validate` — check the serialised output for correctness.
     * :meth:`as_dict` — convert internal rule items into the backend's output format.
     """
 
-    def __init__(self, topology: Optional[JujuTopology] = None) -> None:
-        self.topology = topology
-
     @property
-    @abstractmethod
     def file_suffixes(self) -> List[str]:
         """File extensions this backend supports (e.g. ``['.rule', '.yml']``)."""
         ...
 
-    @abstractmethod
     def from_dict(
         self,
         rule_dict: Mapping[str, Any],
@@ -308,10 +306,6 @@ class RuleBackend(ABC, Generic[T]):
     ) -> List[T]:
         """Read a single rule file and parse it.
 
-        The default implementation loads YAML and delegates to :meth:`from_dict`.
-        Backends that need file-level context (e.g. Prometheus uses the file
-        stem as a group name) should override this method.
-
         Args:
             file_path: Absolute path to the rule file.
             **kwargs: Backend-specific keyword arguments.
@@ -319,20 +313,8 @@ class RuleBackend(ABC, Generic[T]):
         Returns:
             A list of normalised rule items, or an empty list on error.
         """
-        with file_path.open() as f:
-            try:
-                rule_file = yaml.safe_load(f)
-            except Exception as e:
-                logger.error("Failed to read rules from %s: %s", file_path.name, e)
-                return []
+        ...
 
-        try:
-            return self.from_dict(rule_file, **kwargs)
-        except ValueError as e:
-            logger.error("Invalid rules file: %s (%s)", file_path.name, e)
-            return []
-
-    @abstractmethod
     def validate(self, rules: Dict[str, List[T]]) -> Tuple[bool, str]:
         """Validate rules in their serialised dict form.
 
@@ -344,7 +326,6 @@ class RuleBackend(ABC, Generic[T]):
         """
         ...
 
-    @abstractmethod
     def as_dict(self, items: List[T]) -> Dict[str, List[T]]:
         """Serialise rule items into the backend's output format."""
         ...
