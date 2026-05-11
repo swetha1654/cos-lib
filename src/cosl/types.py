@@ -70,6 +70,51 @@ class OfficialRuleFileFormat(TypedDict, total=False):
 
     groups: List[OfficialRuleFileItem]
 
+# --- Sigma rule types ---
+
+
+class SigmaRelated(TypedDict):
+    """A relationship entry linking Sigma rules by ID."""
+
+    id: str
+    type: str
+
+
+class SigmaLogSource(TypedDict, total=False):
+    """Sigma logsource specification identifying the data source."""
+
+    category: str
+    product: str
+    service: str
+    definition: str
+
+
+class SigmaRuleFormat(TypedDict, total=False):
+    """A single Sigma detection rule.
+
+    Reference: https://sigmahq.io/sigma-specification/specification/sigma-rules-specification.html
+    """
+
+    title: Required[str]
+    id: NotRequired[str]
+    name: NotRequired[str]
+    related: NotRequired[List[SigmaRelated]]
+    taxonomy: NotRequired[str]
+    status: NotRequired[str]
+    description: NotRequired[str]
+    license: NotRequired[str]
+    author: NotRequired[str]
+    references: NotRequired[List[str]]
+    date: NotRequired[str]
+    modified: NotRequired[str]
+    logsource: Required[SigmaLogSource]
+    detection: Required[Dict[str, Any]]
+    fields: NotRequired[List[str]]
+    falsepositives: NotRequired[List[str]]
+    level: NotRequired[str]
+    tags: NotRequired[List[str]]
+    scope: NotRequired[List[str]]
+
 
 def type_convert_stored(
     obj: Union[StoredList, StoredDict, Any],
